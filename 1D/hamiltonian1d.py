@@ -29,7 +29,7 @@ def set_chainlength(new_length):
 
     chain_length = new_length
     hop_back = np.eye(2*chain_length, k=2)+np.eye(2*chain_length, k=-2*chain_length+2)
-    hop_fwd = np.eye(2*chain_length, k=2)+np.eye(2*chain_length, k=-2*chain_length+2)
+    hop_fwd = np.eye(2*chain_length, k=-2)+np.eye(2*chain_length, k=2*chain_length-2)
 
     spin_x = spin_y = spin_z = np.zeros((8,8), np.complex128)
     for i in range(chain_length):
