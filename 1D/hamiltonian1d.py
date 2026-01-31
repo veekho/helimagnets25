@@ -50,7 +50,7 @@ def hamiltonian(k_x, exchange, hopping, chirality, moment_mag, angle, rashba_con
         angle (float) : tilt angle (alpha), in radians
         rashba_const (float) : Rashba coupling constant (lambda_R), in eV angstrom
         lattice_const (float) : Lattice constant/spacing of spins (a), in angstroms
-        rsoc_type (str) : Type of Rashba spin-orbit couping (constant, linear, rotating or periodic)
+        rsoc_type (str) : Type of Rashba spin-orbit couping (linear, rotating or periodic)
 
     Returns:
         hamiltonian_matrix (np.ndarray, dtype=np.complex128)
@@ -66,9 +66,7 @@ def hamiltonian(k_x, exchange, hopping, chirality, moment_mag, angle, rashba_con
 
         #Rashba spin-orbit coupling
         rashba_soc = np.zeros((2,2), dtype=np.complex128)
-        if rsoc_type=="constant":
-            rashba_soc += rashba_const*np.eye(2)
-        elif rsoc_type=="linear":
+        if rsoc_type=="linear":
             rashba_soc += -rashba_const*k_x*pauli_z
         elif rsoc_type=="rotating":
             rashba_soc += rashba_const*k_x*(chirality*np.cos(i*np.pi/2)*pauli_z + np.sin(i*np.pi/2)*pauli_y)
