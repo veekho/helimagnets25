@@ -1,5 +1,6 @@
 #Copy of own script: ahc_band_structure.py
-#Calculate AHC from saved data and plot alongside band structure for a single file
+#Calculate AHC from band structure
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm, colors
@@ -64,83 +65,45 @@ print("Calculating eigensolutions")
 for i in range(axis_len_x):
     for j in range(axis_len_y):
         hams[j,i] = hm.hamiltonian(Kx[j, i], Ky[j, i], exchange_coupling, t_x, t_y, chirality, moment_magnitude, angle, rashba_const, rashba_type, a_x, a_y, interchain)
-        eig_val, eig_vec = linalg.eigh(hams[j,i]) #Must be in order of ascending eigenvalue
+        eig_val, eig_vec = linalg.eigh(hams[j,i])
         results_eigvecs[j,i,:,:] = eig_vec
         results_eigvals[j,i,:] = eig_val
         spin_projections[j,i,:] = np.sum(np.conj(eig_vec)*spin_operator@eig_vec, 0).real
 
-#eig_product = np.reshape(results_eigvals, np.shape(Kx)+(1,4*chain_length))*results_eigvecs
 eig_product = hams@results_eigvecs
 berry_curvature_contributions = np.zeros(np.shape(Kx)+(4*chain_length,)) #[kx,ky,bands]
 
 print("Calculating Berry curvature contributions")
-'''
-#Velocity operator AB and A methods
-for eig_index in range(4*chain_length):        
-    eig_vec_local = np.reshape(results_eigvecs[:,:,:,eig_index], np.shape(Kx)+(4*chain_length,1)) #[kx,ky,16,1]
-    eig_vec_other = np.delete(results_eigvecs, eig_index, 3) #[kx,ky,16,15]
 
-    #eig_prod_local = np.reshape(eig_product[:,:,:,eig_index], np.shape(Kx)+(4*chain_length,1))
-    #eig_prod_other = np.delete(eig_product, eig_index, 3)
-    eig_prod_local = hams@eig_vec_local
-    eig_prod_other = hams@eig_vec_other
-        
-    vx_part_a = np.sum(np.conj(eig_vec_local)*d_dKx(eig_prod_other, delta_kx), 2)
-    vy_part_a = np.sum(np.conj(eig_vec_other)*d_dKy(eig_prod_local, delta_ky), 2)
-    vx_part_b = np.sum(np.conj(eig_vec_other)*d_dKx(eig_prod_local, delta_kx), 2)
-    vy_part_b = np.sum(np.conj(eig_vec_local)*d_dKy(eig_prod_other, delta_ky), 2)
-
-    denominator = np.square( np.delete(results_eigvals, eig_index, 2) - np.reshape( results_eigvals[:,:,eig_index], (np.shape(Kx)+(1,)) ) ) #[100,100,15]
-    
-#AB Method
-    #berry_curvature_contributions[:,:,eig_index] = -2*np.sum(np.imag(vx_part_a*vy_part_a - vx_part_b*vy_part_b)/denominator, 2)
-#A Method
-    berry_curvature_contributions[:,:,eig_index] = -2*np.sum(np.imag(vx_part_a*vy_part_a)/denominator, 2)
-#'''
-'''
-#Basic Berry connection method
-x_berry_connection = 1j*np.sum(np.conj(results_eigvecs)*d_dKx(results_eigvecs, delta_kx), 2)
-y_berry_connection = 1j*np.sum(np.conj(results_eigvecs)*d_dKy(results_eigvecs, delta_ky), 2)
-berry_curvature_contributions = ( d_dKx(y_berry_connection, delta_kx) - d_dKy(x_berry_connection, delta_ky) ).real
-#'''
-#'''
-#Full velocity operator method
 for eig_index in range(4*chain_length):        
-    eig_vec_local = np.reshape(results_eigvecs[:,:,:,eig_index], np.shape(Kx)+(4*chain_length,1)) #[kx,ky,16,1]
-    eig_vec_other = np.delete(results_eigvecs, eig_index, 3) #[kx,ky,16,15]
+    eig_vec_local = np.reshape(results_eigvecs[:,:,:,eig_index], np.shape(Kx)+(4*chain_length,1))
+    eig_vec_other = np.delete(results_eigvecs, eig_index, 3)
 
     vx_part_a = np.sum(np.conj(eig_vec_local)*d_dKx(hams@eig_vec_other, delta_kx), 2)
     vx_part_b = np.sum(np.conj(eig_vec_local)*hams@d_dKx(eig_vec_other, delta_kx), 2)
     vy_part_a = np.sum(np.conj(eig_vec_other)*d_dKy(hams@eig_vec_local, delta_ky), 2)
     vy_part_b = np.sum(hams@d_dKy(eig_vec_local, delta_ky)*np.conj(eig_vec_other), 2)
 
-    denominator = np.square( np.delete(results_eigvals, eig_index, 2) - np.reshape( results_eigvals[:,:,eig_index], (np.shape(Kx)+(1,)) ) ) #[100,100,15]
+    denominator = np.square( np.delete(results_eigvals, eig_index, 2) - np.reshape( results_eigvals[:,:,eig_index], (np.shape(Kx)+(1,)) ) )
     
     berry_curvature_contributions[:,:,eig_index] = -2*np.sum(np.imag((vx_part_a-vx_part_b)*(vy_part_a-vy_part_b))/denominator, 2)
 
-#'''
 
 np.nan_to_num(berry_curvature_contributions, copy=False, posinf=1e40, neginf=-1e40)
 ahc = np.zeros((fermi_levels))
 fermi_energies = np.linspace(np.min(results_eigvals), np.max(results_eigvals), fermi_levels)
 
 print("Calculating anomalous Hall conductivities")
-#for fermi_level, fermi_energy in enumerate(fermi_energies):
-#    berry_curvature = np.sum(np.heaviside(fermi_energy-results_eigvals,0.5)*berry_curvature_contributions, 2)
-#    #berry_curvature = np.sum(fermi_dirac(results_eigvals, plot_temp, fermi_energy)*berry_curvature_contributions, 2)
-#    ahc[fermi_level] = - constants.elementary_charge**2/constants.hbar * np.sum(berry_curvature)/(2*np.pi)**2 * delta_kx*delta_ky / 100 #in e^2/hbar
+
 berry_curvature = np.zeros(np.shape(Kx)+(fermi_levels,))
 for fermi_level, fermi_energy in enumerate(fermi_energies):
-    berry_curvature[:,:,fermi_level] = np.sum(np.heaviside(fermi_energy-results_eigvals,0.5)*berry_curvature_contributions, 2)
+    #berry_curvature[:,:,fermi_level] = np.sum(fermi_dirac(results_eigvals, temp, fermi_energy)*berry_curvature_contributions, 2) # T!=0K -- Possible overflow warning
+    berry_curvature[:,:,fermi_level] = np.sum(np.heaviside(fermi_energy-results_eigvals,0.5)*berry_curvature_contributions, 2)  # T=0K assumption
     #ahc[fermi_level] = - constants.elementary_charge**2/constants.hbar * np.sum(berry_curvature[:,:,fermi_level])/(2*np.pi)**2 * delta_kx*delta_ky / 100 #in ohms-1 cm-2
     ahc[fermi_level] = - np.sum(berry_curvature[:,:,fermi_level])/(2*np.pi)**2 * delta_kx*delta_ky #in e^2/hbar
 
-#ahc = - constants.elementary_charge**2/constants.hbar * np.sum(np.sum(berry_curvature[:,:,fermi_level], 0),0)/(2*np.pi)**2 * delta_kx*delta_ky / 100
-
 fig = plt.figure(figsize=(12,5))
 gs = fig.add_gridspec(1,20)
-#fig_ahc = plt.figure(figsize=(6,7))
-#ax_ahc = fig_ahc.add_subplot(111)
 ax_ahc = fig.add_subplot(gs[0,:6])
 ax_ahc.grid(True)
 ax_ahc.plot(ahc, fermi_energies, 'k-')
@@ -249,16 +212,12 @@ plot_axis_labels.append(r'$M1$')
 
 cmap=colors.LinearSegmentedColormap.from_list("bgr", ["#0000ff", "#00ff00", "#ff0000"])
 norm = colors.Normalize(vmin=-1, vmax=+1)
-#color_scale = cm.ScalarMappable(norm=norm, cmap=cmap)
-color_scale = cm.ScalarMappable(norm=norm, cmap=cm.bwr)
+color_scale = cm.ScalarMappable(norm=norm, cmap=cmap)
+#color_scale = cm.ScalarMappable(norm=norm, cmap=cm.bwr)
 
-
-#fig_bands = plt.figure(figsize=(12,7))
-#ax_bands = fig_bands.add_subplot(111)
 ax_bands = fig.add_subplot(gs[0,7:], sharey=ax_ahc)
 ax_bands.scatter(plot_data[:,0], plot_data[:,1], marker='.', s=2, c=plot_data[:,2], cmap=cmap, norm=norm)
-#for i in range(8):
-#    ax_bands.plot(plot_data[i::8,0], plot_data[i::8,1], c=plot_data[i::8,2], linestyle='-', cmap=cmap, norm=norm)
+
 ax_bands.set_xticks(plot_axis_ticks, labels=plot_axis_labels)
 cbar = fig.colorbar(color_scale, ax=ax_bands, label=r"$\langle S_x \rangle$")
 cbar.set_ticks(ticks=[-1, 0, 1], labels=['-1', '0', '+1'])
@@ -332,28 +291,28 @@ def submit_minKx(text_input):
     try:
         plot_minKx = float(text_input)
     except:
-        print("Suck a fat one!")
+        print("Check input for: Kx min")
 
 def submit_maxKx(text_input):
     global plot_maxKx
     try:
         plot_maxKx = float(text_input)
     except:
-        print("Suck a fat one!")
+        print("Check input for: Kx max")
 
 def submit_minKy(text_input):
     global plot_minKy
     try:
         plot_minKy = float(text_input)
     except:
-        print("Suck a fat one!")
+        print("Check input for: Ky min")
 
 def submit_maxKy(text_input):
     global plot_maxKy
     try:
         plot_maxKy = float(text_input)
     except:
-        print("Suck a fat one!")
+        print("Check input for: Ky max")
 
 def update_fermi_lvl(fermi_lvl):
     global plot_fermi_level
