@@ -15,12 +15,12 @@ def set_chainlength(new_length):
     global chain_length, spin_x, spin_y, spin_z, hop_fwd, hop_back
     
     chain_length=new_length
-    spin_x = spin_y = spin_z = np.zeros((4*n, 4*n), dtype=np.complex128)
+    spin_x = spin_y = spin_z = np.zeros((4*chain_length, 4*chain_length), dtype=np.complex128)
     
-    for i in range(2*n):
-        spin_x+=np.pad(pauli_x, (2*i, 2*(2*n-1-i)))
-        spin_y+=np.pad(pauli_y, (2*i, 2*(2*n-1-i)))
-        spin_z+=np.pad(pauli_z, (2*i, 2*(2*n-1-i)))
+    for i in range(2*chain_length):
+        spin_x+=np.pad(pauli_x, (2*i, 2*(2*chain_length-1-i)))
+        spin_y+=np.pad(pauli_y, (2*i, 2*(2*chain_length-1-i)))
+        spin_z+=np.pad(pauli_z, (2*i, 2*(2*chain_length-1-i)))
         
     hop_back = np.eye(2*chain_length, k=2)+np.eye(2*chain_length, k=-2*(chain_length-1))
     hop_fwd = np.eye(2*chain_length, k=-2)+np.eye(2*chain_length, k=2*(chain_length-1))
