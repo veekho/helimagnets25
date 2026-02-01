@@ -1,6 +1,4 @@
-#Copy of own script: helimagnet_hamiltonian.py
 #General library for Hamiltonian matrix, differential Hamiltonian matrix, spin projection operation
-
 import numpy as np
 
 chain_length = 4

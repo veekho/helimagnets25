@@ -1,5 +1,7 @@
-#Copy of own script: ahc_band_structure.py
-#Calculate AHC from band structure
+#Calculate AHC from band structure, 3 plots produced:
+    #AHC vs Energy along side band structure 
+    #Contour plot of Fermi surface, with Fermi energy variable by slider
+    #Surface plot of Band structure, with region is adjustable by textboxes, and visibility of bands toggled by checkbuttons, both in above plot window
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,6 +10,7 @@ from scipy import linalg, constants
 from matplotlib.widgets import Slider, TextBox, Button, CheckButtons
 import hamiltonian2d as hm
 
+#Constants
 rashba_const = 2 #eV/angstrom, lambda_R
 rashba_type = "linear"
 lattice_const = 1 #angstrom, a
@@ -24,8 +27,8 @@ a_x = lattice_const
 a_y = lattice_const
 chain_length = 4
 
-fermi_levels = 500
-axis_len_half = 100
+fermi_levels = 500 #Number of energies to calculate Berry curvature at
+axis_len_half = 100 #Half size of mesh across Brillouin zone
 axis_len_x = 2*axis_len_half
 axis_len_y = 2*chain_length*axis_len_half
 min_kx = -np.pi/(chain_length*a_x)
